@@ -2,12 +2,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 
-type RouteParams = { params: { id: string } };
+// ✅ Next.js 16 expects params as a Promise in route handlers
+type RouteParams = { params: Promise<{ id: string }> };
 
 // GET single item
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const supabase = (await createSupabaseServerClient()) as any;
-  const { id } = params;
+  const { id } = await params;
 
   const { data, error } = await supabase
     .from("items")
@@ -28,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 // PUT – update listing (edit page)
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   const supabase = (await createSupabaseServerClient()) as any;
-  const { id } = params;
+  const { id } = await params;
 
   const body = await req.json();
   let {
@@ -48,10 +49,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return NextResponse.json(
-      { error: "Not authenticated" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   // build partial update object
@@ -109,7 +107,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 // PATCH – mark as sold / unsold (used by your "Mark as sold" button)
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const supabase = (await createSupabaseServerClient()) as any;
-  const { id } = params;
+  const { id } = await params;
   const { isSold } = await req.json();
 
   const {
@@ -118,10 +116,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return NextResponse.json(
-      { error: "Not authenticated" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   const { data, error } = await supabase
@@ -146,7 +141,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 // DELETE – delete listing
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   const supabase = (await createSupabaseServerClient()) as any;
-  const { id } = params;
+  const { id } = await params;
 
   const {
     data: { user },
@@ -154,10 +149,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return NextResponse.json(
-      { error: "Not authenticated" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   const { error } = await supabase
