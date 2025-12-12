@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Always dark / black theme */
+  --background: #020617; /* slate-950-ish, almost black */
+  --foreground: #e5e7eb; /* slate-200 */
 }
 
 @theme inline {
@@ -12,15 +13,22 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* We don't really need a light mode, but keep it consistent */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #020617;
+    --foreground: #e5e7eb;
   }
 }
 
 body {
-  background: var(--background);
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.18), transparent 60%),
+    radial-gradient(circle at bottom, rgba(199, 210, 254, 0.14), transparent 60%),
+    #020617;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    Arial, Helvetica, sans-serif;
 }
