@@ -184,7 +184,15 @@ export default function LoginForm() {
 
   // allowed college domains
   const allowedDomains = useMemo(
-    () => ["tcd.ie", "ucd.ie", "dcu.ie", "ncirl.ie", "ul.ie", "mu.ie"],
+    () => [
+      "tcd.ie",
+      "ucd.ie",
+      "dcu.ie",
+      "student.ncirl.ie", // ✅ NCI student emails
+      "ncirl.ie",
+      "ul.ie",
+      "mu.ie",
+    ],
     []
   );
 
@@ -208,7 +216,7 @@ export default function LoginForm() {
     // 1) Domain check – only real college domains
     if (!domainAllowed) {
       setErrorMsg(
-        "Please use your verified college email (e.g. @tcd.ie, @ucd.ie, @dcu.ie, @ncirl.ie)."
+        "Please use your verified college email (e.g. @tcd.ie, @ucd.ie, @dcu.ie, @student.ncirl.ie)."
       );
       return;
     }
@@ -528,7 +536,15 @@ export default function LoginForm() {
 
       {/* small domains hint */}
       <div className="mt-5 flex flex-wrap justify-center gap-2 text-[11px] text-slate-500">
-        {["tcd.ie", "ucd.ie", "dcu.ie", "ncirl.ie", "ul.ie", "mu.ie"].map((d) => (
+        {[
+          "tcd.ie",
+          "ucd.ie",
+          "dcu.ie",
+          "student.ncirl.ie",
+          "ncirl.ie",
+          "ul.ie",
+          "mu.ie",
+        ].map((d) => (
           <span
             key={d}
             className={`rounded-full border px-2 py-1 ${
