@@ -1,7 +1,6 @@
 // app/users/[id]/page.tsx
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
-import { getCollegeLabel } from "@/lib/colleges";
 
 type SellerPageProps = {
   // Next 16: params is Promise
@@ -31,12 +30,7 @@ export default async function SellerPage({ params }: SellerPageProps) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-50">
         <main className="mx-auto max-w-5xl px-4 py-8">
-          
-            href="/marketplace"
-            className="text-xs text-slate-400 hover:text-sky-300"
-          >
-            ← Back to marketplace
-          </a>
+          <a href="/marketplace" className="text-xs text-slate-400 hover:text-sky-300">← Back to marketplace</a>
 
           <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/80 p-6">
             <div className="flex items-center gap-4">
@@ -67,19 +61,17 @@ export default async function SellerPage({ params }: SellerPageProps) {
       ? localPart.charAt(0).toUpperCase() + localPart.slice(1)
       : "Student seller";
 
-  const collegeLabel = getCollegeLabel(first.college_domain);
+  const collegeLabel =
+    first.college_domain && typeof first.college_domain === "string"
+      ? first.college_domain.replace(".ie", "").toUpperCase() + " student"
+      : "Student seller";
 
   const avatarInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <main className="mx-auto max-w-5xl px-4 py-8">
-        
-          href="/marketplace"
-          className="text-xs text-slate-400 hover:text-sky-300"
-        >
-          ← Back to marketplace
-        </a>
+        <a href="/marketplace" className="text-xs text-slate-400 hover:text-sky-300">← Back to marketplace</a>
 
         {/* Seller header */}
         <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/80 p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -134,7 +126,7 @@ export default async function SellerPage({ params }: SellerPageProps) {
                 : null;
 
               return (
-                
+                <a
                   key={item.id}
                   href={`/marketplace/${item.id}`}
                   className={`group rounded-2xl border border-slate-800/80 bg-slate-900/40 overflow-hidden hover:border-sky-500/60 hover:bg-slate-900 transition-colors ${
