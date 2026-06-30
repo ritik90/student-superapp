@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabaseClient";
+import { LOCATIONS } from "@/lib/locations";
 
 type Item = {
   id: string;
@@ -21,10 +22,6 @@ type Item = {
   user_id: string | null;
   is_sold: boolean;
   college_domain: string | null;
-};
-
-type ConversationForBadge = {
-  last_message_at: string | null;
 };
 
 const CATEGORY_DEFAULTS = [
@@ -47,18 +44,7 @@ const CONDITION_DEFAULTS = [
   { value: "well used", label: "Well used" },
 ];
 
-const LOCATION_DEFAULTS = [
-  "Dublin 1",
-  "Dublin 2",
-  "Dublin 4",
-  "Dublin 6",
-  "Dublin 8",
-  "On-campus TCD",
-  "On-campus UCD",
-  "On-campus DCU",
-  "NCIRL",
-  "Online only",
-];
+const LOCATION_DEFAULTS = LOCATIONS;
 
 export default function MarketplaceClient() {
   const [items, setItems] = useState<Item[]>([]);
@@ -77,9 +63,7 @@ export default function MarketplaceClient() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [conditionFilter, setConditionFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
-  const [sortOrder, setSortOrder] = useState<
-    "newest" | "price_low" | "price_high"
-  >("newest");
+  const [sortOrder, setSortOrder] = useState<"newest" | "price_low" | "price_high">("newest");
   const [hideSold, setHideSold] = useState(true);
   const [onlyMine, setOnlyMine] = useState(false);
 
@@ -124,29 +108,19 @@ export default function MarketplaceClient() {
     loadFavs();
   }, [currentUserId]);
 
-  // 4) Inbox unread badge
+  // 4) Inbox unread badge — server computes this now (per-conversation read
+  // tracking in `conversation_reads`), so this is just reading the number.
   useEffect(() => {
     if (!currentUserId) return;
 
-    const key = `studenthub_last_chats_seen_${currentUserId}`;
-
     async function fetchUnread() {
-      const lastSeen = Number(localStorage.getItem(key) || 0);
-
-      const res = await fetch("/api/chats", { cache: "no-store" });
-      const json = await res.json();
-
-      const conversations: ConversationForBadge[] = json.conversations || [];
-      let count = 0;
-
-      conversations.forEach((c) => {
-        if (c.last_message_at) {
-          const t = new Date(c.last_message_at).getTime();
-          if (t > lastSeen) count++;
-        }
-      });
-
-      setUnreadCount(count);
+      try {
+        const res = await fetch("/api/chats", { cache: "no-store" });
+        const json = await res.json();
+        setUnreadCount(json.unread_count ?? 0);
+      } catch (e) {
+        console.error("Failed to fetch unread count:", e);
+      }
     }
 
     fetchUnread();
@@ -262,10 +236,8 @@ export default function MarketplaceClient() {
 
   // ------------------------ UI ------------------------
 
-  // UI-only blur background layer (same for loading/error/main)
-    const BlurBg = () => (
+  const BlurBg = () => (
     <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-      {/* BLURRED COLLAGE IMAGE (same style as login) */}
       <Image
         src="/marketplace-collage.jpg"
         alt="Marketplace background"
@@ -273,18 +245,11 @@ export default function MarketplaceClient() {
         priority
         className="object-cover scale-110 blur-xl opacity-80"
       />
-
-      {/* DARK OVERLAY */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/40 to-black/70" />
-
-      {/* COLOR GLOW */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(56,189,248,0.18),transparent_42%),radial-gradient(circle_at_82%_22%,rgba(167,139,250,0.16),transparent_44%),radial-gradient(circle_at_55%_90%,rgba(16,185,129,0.12),transparent_46%)]" />
-
-      {/* VIGNETTE */}
       <div className="absolute inset-0 shadow-[inset_0_0_180px_rgba(0,0,0,0.75)]" />
     </div>
   );
-
 
   if (loading)
     return (
@@ -319,7 +284,6 @@ export default function MarketplaceClient() {
       <BlurBg />
 
       <main className="mx-auto max-w-6xl px-4 py-6 pb-12 relative z-10">
-        {/* TOP NAV / HEADER */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
           <div>
             <p className="text-xs font-semibold tracking-[0.25em] text-sky-400 uppercase mb-2">
@@ -371,11 +335,9 @@ export default function MarketplaceClient() {
           </div>
         </header>
 
-        {/* HERO SEARCH BAR */}
         <section className="mb-8">
           <div className="mx-auto max-w-3xl">
             <div className="flex flex-col gap-3 md:flex-row">
-              {/* Category dropdown */}
               <div className="w-full md:w-52">
                 <select
                   value={categoryFilter}
@@ -391,7 +353,6 @@ export default function MarketplaceClient() {
                 </select>
               </div>
 
-              {/* Search input with icon style */}
               <div className="flex-1 relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs md:text-sm text-slate-500">
                   🔍
@@ -407,10 +368,8 @@ export default function MarketplaceClient() {
             </div>
           </div>
 
-          {/* Secondary filters row under search */}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[11px] md:text-xs">
             <div className="flex flex-wrap gap-2">
-              {/* Condition */}
               <select
                 value={conditionFilter}
                 onChange={(e) => setConditionFilter(e.target.value)}
@@ -424,7 +383,6 @@ export default function MarketplaceClient() {
                 ))}
               </select>
 
-              {/* Location */}
               <select
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
@@ -438,7 +396,6 @@ export default function MarketplaceClient() {
                 ))}
               </select>
 
-              {/* Sort */}
               <select
                 value={sortOrder}
                 onChange={(e) =>
@@ -455,7 +412,6 @@ export default function MarketplaceClient() {
             </div>
 
             <div className="flex gap-2">
-              {/* Hide sold */}
               <button
                 onClick={() => setHideSold((v) => !v)}
                 className={`rounded-full px-3 py-1.5 border ${
@@ -467,7 +423,6 @@ export default function MarketplaceClient() {
                 {hideSold ? "Hiding sold" : "Show sold"}
               </button>
 
-              {/* Only my listings */}
               <button
                 onClick={() => setOnlyMine((v) => !v)}
                 className={`rounded-full px-3 py-1.5 border ${
@@ -482,7 +437,6 @@ export default function MarketplaceClient() {
           </div>
         </section>
 
-        {/* 💸 Student deals horizontal strip */}
         {budgetItems.length > 0 && !hasQuery && (
           <section className="mb-10">
             <h2 className="text-sm md:text-base font-semibold text-slate-100 mb-1">
@@ -504,10 +458,12 @@ export default function MarketplaceClient() {
                   >
                     <div className="aspect-[4/3] bg-slate-950 relative overflow-hidden">
                       {img ? (
-                        <img
+                        <Image
                           src={img}
                           alt={item.title}
-                          className="h-full w-full object-cover"
+                          fill
+                          sizes="180px"
+                          className="object-cover"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
@@ -528,7 +484,6 @@ export default function MarketplaceClient() {
           </section>
         )}
 
-        {/* MAIN RESULTS SECTION */}
         <section>
           <div className="flex items-baseline justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
@@ -564,10 +519,12 @@ export default function MarketplaceClient() {
                     <Link href={`/marketplace/${item.id}`}>
                       <div className="relative aspect-[2/3] bg-slate-950 overflow-hidden">
                         {img ? (
-                          <img
+                          <Image
                             src={img}
                             alt={item.title}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            fill
+                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">
@@ -581,7 +538,6 @@ export default function MarketplaceClient() {
                           </div>
                         )}
 
-                        {/* Favorite */}
                         {currentUserId && (
                           <button
                             type="button"
@@ -619,6 +575,16 @@ export default function MarketplaceClient() {
           )}
         </section>
       </main>
+
+      <footer className="relative z-10 border-t border-slate-800/60 py-4 text-center text-[11px] text-slate-500">
+        <div className="flex items-center justify-center gap-3">
+          <a href="/terms" className="hover:text-slate-300 hover:underline underline-offset-2">Terms of Service</a>
+          <span>·</span>
+          <a href="/privacy" className="hover:text-slate-300 hover:underline underline-offset-2">Privacy Policy</a>
+          <span>·</span>
+          <span>Student Hub © 2025</span>
+        </div>
+      </footer>
     </div>
   );
 }

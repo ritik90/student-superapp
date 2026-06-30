@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // ✅ Only participants can see messages
+    // Only participants can see messages
     const check = await assertUserInConversation(
       supabase,
       conversationId,
@@ -98,6 +98,22 @@ export async function GET(req: NextRequest) {
         { error: "Failed to load messages" },
         { status: 500 }
       );
+    }
+
+    // Viewing a conversation marks it as read, for this user only.
+    const { error: readError } = await supabase
+      .from("conversation_reads")
+      .upsert(
+        {
+          conversation_id: conversationId,
+          user_id: userId,
+          last_read_at: new Date().toISOString(),
+        },
+        { onConflict: "conversation_id,user_id" }
+      );
+
+    if (readError) {
+      console.error("Failed to update read state:", readError);
     }
 
     return NextResponse.json({
@@ -131,7 +147,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Only participants can send
+    if (content.length > 2000) {
+      return NextResponse.json(
+        { error: "Message is too long (max 2000 characters)" },
+        { status: 400 }
+      );
+    }
+
+    // Basic abuse protection: max 10 messages per 10 seconds per user.
+    // Checked against the database (not in-memory) because Vercel's
+    // serverless functions don't share memory between invocations.
+    const tenSecondsAgo = new Date(Date.now() - 10_000).toISOString();
+    const { count: recentCount, error: rateError } = await supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("sender_id", userId)
+      .gte("created_at", tenSecondsAgo);
+
+    if (rateError) {
+      console.error("Rate limit check failed:", rateError);
+    } else if ((recentCount ?? 0) >= 10) {
+      return NextResponse.json(
+        { error: "You're sending messages too fast. Please wait a moment." },
+        { status: 429 }
+      );
+    }
+
+    // Only participants can send
     const check = await assertUserInConversation(
       supabase,
       conversationId,
@@ -157,14 +199,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Update conversation metadata
+    // Update conversation metadata, including who sent it, so unread
+    // tracking never flags your own latest message as unread for you.
     await supabase
       .from("conversations")
       .update({
         last_message_at: msg.created_at,
         last_message_preview: content.slice(0, 120),
+        last_message_sender_id: userId,
       })
       .eq("id", conversationId);
+
+    // Sending a message also counts as having read up to this point.
+    await supabase.from("conversation_reads").upsert(
+      {
+        conversation_id: conversationId,
+        user_id: userId,
+        last_read_at: msg.created_at,
+      },
+      { onConflict: "conversation_id,user_id" }
+    );
 
     return NextResponse.json({ success: true });
   } catch (err) {

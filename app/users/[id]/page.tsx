@@ -1,6 +1,7 @@
 // app/users/[id]/page.tsx
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { getCollegeLabel } from "@/lib/colleges";
 
 type SellerPageProps = {
   // Next 16: params is Promise
@@ -30,7 +31,7 @@ export default async function SellerPage({ params }: SellerPageProps) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-50">
         <main className="mx-auto max-w-5xl px-4 py-8">
-          <a
+          
             href="/marketplace"
             className="text-xs text-slate-400 hover:text-sky-300"
           >
@@ -66,17 +67,14 @@ export default async function SellerPage({ params }: SellerPageProps) {
       ? localPart.charAt(0).toUpperCase() + localPart.slice(1)
       : "Student seller";
 
-  const collegeLabel =
-    first.college_domain && typeof first.college_domain === "string"
-      ? first.college_domain.replace(".ie", "").toUpperCase() + " student"
-      : "Student seller";
+  const collegeLabel = getCollegeLabel(first.college_domain);
 
   const avatarInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <main className="mx-auto max-w-5xl px-4 py-8">
-        <a
+        
           href="/marketplace"
           className="text-xs text-slate-400 hover:text-sky-300"
         >
@@ -136,7 +134,7 @@ export default async function SellerPage({ params }: SellerPageProps) {
                 : null;
 
               return (
-                <a
+                
                   key={item.id}
                   href={`/marketplace/${item.id}`}
                   className={`group rounded-2xl border border-slate-800/80 bg-slate-900/40 overflow-hidden hover:border-sky-500/60 hover:bg-slate-900 transition-colors ${

@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseClient";
+import { ALLOWED_COLLEGE_DOMAINS } from "@/lib/colleges";
 
 function Spinner() {
   return (
@@ -182,19 +183,8 @@ export default function LoginForm() {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  // allowed college domains
-  const allowedDomains = useMemo(
-    () => [
-      "tcd.ie",
-      "ucd.ie",
-      "dcu.ie",
-      "student.ncirl.ie", // ✅ NCI student emails
-      "ncirl.ie",
-      "ul.ie",
-      "mu.ie",
-    ],
-    []
-  );
+  // allowed college domains — now sourced from lib/colleges.ts
+  const allowedDomains = useMemo(() => ALLOWED_COLLEGE_DOMAINS, []);
 
   const domain = useMemo(() => {
     const atIndex = email.lastIndexOf("@");
@@ -216,7 +206,7 @@ export default function LoginForm() {
     // 1) Domain check – only real college domains
     if (!domainAllowed) {
       setErrorMsg(
-        "Please use your verified college email (e.g. @tcd.ie, @ucd.ie, @dcu.ie, @student.ncirl.ie)."
+        "Please use your verified Irish college email (e.g. @tcd.ie, @ucd.ie, @universityofgalway.ie). See the full list of supported colleges below."
       );
       return;
     }
@@ -534,17 +524,9 @@ export default function LoginForm() {
         </p>
       )}
 
-      {/* small domains hint */}
+      {/* domains hint */}
       <div className="mt-5 flex flex-wrap justify-center gap-2 text-[11px] text-slate-500">
-        {[
-          "tcd.ie",
-          "ucd.ie",
-          "dcu.ie",
-          "student.ncirl.ie",
-          "ncirl.ie",
-          "ul.ie",
-          "mu.ie",
-        ].map((d) => (
+        {allowedDomains.map((d) => (
           <span
             key={d}
             className={`rounded-full border px-2 py-1 ${
@@ -556,6 +538,12 @@ export default function LoginForm() {
             @{d}
           </span>
         ))}
+      </div>
+
+      <div className="mt-4 flex items-center justify-center gap-3 text-[11px] text-slate-500">
+        <a href="/terms" className="hover:text-slate-300 underline-offset-2 hover:underline">Terms of Service</a>
+        <span>·</span>
+        <a href="/privacy" className="hover:text-slate-300 underline-offset-2 hover:underline">Privacy Policy</a>
       </div>
     </div>
   );

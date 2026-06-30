@@ -1,13 +1,13 @@
 // app/api/items/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { LOCATIONS } from "@/lib/locations";
 
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 1000;
 const MAX_PRICE_EUR = 100000;
 const MAX_IMAGES = 6;
 
-// 👇 EXACTLY matches your form + filters (lowercase values)
 const ALLOWED_CATEGORIES = [
   "furniture",
   "electronics",
@@ -28,18 +28,7 @@ const ALLOWED_CONDITIONS = [
   "well used",
 ];
 
-const ALLOWED_LOCATIONS = [
-  "Dublin 1",
-  "Dublin 2",
-  "Dublin 4",
-  "Dublin 6",
-  "Dublin 8",
-  "On-campus TCD",
-  "On-campus UCD",
-  "On-campus DCU",
-  "NCIRL",
-  "Online only",
-];
+const ALLOWED_LOCATIONS = LOCATIONS;
 
 export async function GET() {
   try {

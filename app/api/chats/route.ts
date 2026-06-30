@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+type OtherUserInfo = { full_name: string | null; email: string | null };
+
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -24,6 +26,7 @@ export async function GET(req: NextRequest) {
         seller_id,
         last_message_at,
         last_message_preview,
+        last_message_sender_id,
         items (
           title,
           image_urls
@@ -54,25 +57,41 @@ export async function GET(req: NextRequest) {
       )
     );
 
-    // fetch each user's name/email via admin client
-    const userMap = new Map<
-      string,
-      { full_name: string | null; email: string | null }
-    >();
+    const userEntries: Array<[string, OtherUserInfo]> = [];
 
-    for (const uid of otherIds) {
-      try {
-        const { data: userData, error: userError } =
-          await supabaseAdmin.auth.admin.getUserById(uid);
-        if (!userError && userData?.user) {
-          const meta = (userData.user.user_metadata || {}) as any;
-          userMap.set(uid, {
-            full_name: (meta.full_name as string) ?? null,
-            email: userData.user.email ?? null,
-          });
+    if (otherIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", otherIds);
+
+      if (profilesError) {
+        console.error("Error loading profiles for conversations:", profilesError);
+      } else {
+        for (const p of profiles ?? []) {
+          userEntries.push([p.id, { full_name: p.full_name ?? null, email: p.email ?? null }]);
         }
-      } catch (e) {
-        console.error("Error loading user for conversation:", uid, e);
+      }
+    }
+
+    const userMap = new Map(userEntries);
+
+    // --- read state, batched in one query ---
+    const readMap = new Map<string, string>(); // conversation_id -> last_read_at
+
+    if (convs.length > 0) {
+      const { data: reads, error: readsError } = await supabase
+        .from("conversation_reads")
+        .select("conversation_id, last_read_at")
+        .eq("user_id", currentUserId)
+        .in("conversation_id", convs.map((c) => c.id));
+
+      if (readsError) {
+        console.error("Error loading read state:", readsError);
+      } else {
+        for (const r of reads ?? []) {
+          readMap.set(r.conversation_id, r.last_read_at);
+        }
       }
     }
 
@@ -81,14 +100,29 @@ export async function GET(req: NextRequest) {
         c.buyer_id === currentUserId ? c.seller_id : c.buyer_id;
       const info = otherId ? userMap.get(otherId) : undefined;
 
+      const lastSenderIsOther =
+        !!c.last_message_sender_id && c.last_message_sender_id !== currentUserId;
+      const myReadAt = readMap.get(c.id);
+
+      const isUnread = Boolean(
+        c.last_message_at &&
+          lastSenderIsOther &&
+          (!myReadAt ||
+            new Date(c.last_message_at).getTime() >
+              new Date(myReadAt).getTime())
+      );
+
       return {
         ...c,
         other_user_name: info?.full_name || info?.email || "Student",
         other_user_email: info?.email ?? null,
+        is_unread: isUnread,
       };
     });
 
-    return NextResponse.json({ conversations: enriched });
+    const unreadCount = enriched.filter((c) => c.is_unread).length;
+
+    return NextResponse.json({ conversations: enriched, unread_count: unreadCount });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

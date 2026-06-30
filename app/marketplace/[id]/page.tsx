@@ -2,6 +2,7 @@
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getCollegeLabel } from "@/lib/colleges";
 import MessageSellerButton from "./MessageSellerButton";
 import OwnerActions from "./OwnerActions";
 import ItemImagesClient from "./ItemImagesClient";
@@ -48,10 +49,7 @@ export default async function ItemPage({ params }: ItemPageProps) {
 
   const sellerEmail: string | null = item.seller_email ?? null;
   const phone: string | null = item.phone ?? null;
-  const collegeLabel =
-    item.college_domain && typeof item.college_domain === "string"
-      ? item.college_domain.replace(".ie", "").toUpperCase() + " student"
-      : "Student seller";
+  const collegeLabel = getCollegeLabel(item.college_domain);
 
   const isOwner = user && item.user_id === user.id;
 
@@ -79,7 +77,7 @@ export default async function ItemPage({ params }: ItemPageProps) {
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <main className="mx-auto max-w-6xl px-4 py-6">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <a
+          
             href="/marketplace"
             className="text-xs text-slate-400 hover:text-sky-300"
           >
@@ -197,7 +195,7 @@ export default async function ItemPage({ params }: ItemPageProps) {
 
                   {item.user_id && (
                     <p className="mt-1 text-[11px]">
-                      <a
+                      
                         href={`/users/${item.user_id}`}
                         className="text-sky-300 hover:text-sky-200 underline-offset-2 hover:underline"
                       >

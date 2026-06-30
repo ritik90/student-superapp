@@ -4,6 +4,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseClient";
+import { LOCATIONS } from "@/lib/locations";
 
 type Props = {
   userEmail: string;
@@ -30,18 +31,7 @@ const CONDITION_OPTIONS = [
   { value: "well used", label: "Well used" },
 ];
 
-const LOCATION_OPTIONS = [
-  "Dublin 1",
-  "Dublin 2",
-  "Dublin 4",
-  "Dublin 6",
-  "Dublin 8",
-  "On-campus TCD",
-  "On-campus UCD",
-  "On-campus DCU",
-  "NCIRL",
-  "Online only",
-];
+const LOCATION_OPTIONS = LOCATIONS;
 
 export default function NewListingClient({ userEmail, collegeDomain }: Props) {
   const router = useRouter();
