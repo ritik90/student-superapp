@@ -29,7 +29,7 @@ export const COLLEGES: College[] = [
   { name: "American College Dublin", domains: ["amcd.ie"] },
   { name: "CCT College Dublin", domains: ["cct.ie"] },
   { name: "Dorset College", domains: ["dorset.ie"] },
-  { name: "Dublin Business School", domains: ["dbs.ie"] },
+  { name: "Dublin Business School", domains: ["dbs.ie", "mydbs.ie"] },
   { name: "Griffith College", domains: ["griffith.ie"] },
   { name: "IBAT College Dublin", domains: ["ibat.ie"] },
   { name: "National College of Ireland", domains: ["ncirl.ie", "student.ncirl.ie"] },
